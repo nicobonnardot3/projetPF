@@ -1,1 +1,1 @@
-let run () = Format.printf "Hello, world!"
+let run () = Format.printf "Hello, caml!"
