@@ -38,10 +38,6 @@ let rec read_directory_object _h =
   in
   Directory (List.rev (createDirObj splitData))
 
-  let clean_work_directory () = failwith "TODO ( clean_work_directory )"
-
-let read_directory_object _h = failwith "TODO ( read_directory_object )" 
-  
 let clean_work_directory () = ()
   
   (* let rec clearDir dir =
