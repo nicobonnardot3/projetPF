@@ -1,5 +1,8 @@
 {
     "workbench.colorCustomizations": {
         "minimap.background": "#00000000"
+    },
+    "ocaml.sandbox": {
+        "kind": "global"
     }
 }
