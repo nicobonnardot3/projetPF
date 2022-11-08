@@ -16,7 +16,39 @@ let store_object _obj = failwith "TODO ( store_object )"
 
 let read_text_object _h: Digest.t = Core.In_channel.read_all (".ogit/objects/" ^ _h)
 
-let store_work_directory () = failwith "TODO ( store_work_directory )"
+let store_work_directory () : Digest.t =
+  let removeUnwantedPart str =
+    let len = String.length str in
+    if len > 0 && str.[len-1] = '\n' then String.sub str 0 (len - 1) else str
+  in
+  let rec treatCurrentDir dir : Digest.t =
+    let currentDirArray = Sys.readdir dir in
+    let dirFileContent = ref [] in
+    for i=0 to (Array.length currentDirArray) - 1 do
+      let currentFile = currentDirArray.(i) in
+      let firstChar = String.get currentFile 0 in
+        if(firstChar <> '.') then begin
+          if (Sys.is_directory (dir ^ "/" ^ currentFile)) then begin
+            let hashedDir = treatCurrentDir (dir ^ "/" ^ currentFile) in
+            dirFileContent := (currentFile ^ ";d;" ^ (Digest.to_hex hashedDir) ^ "\n")::!dirFileContent;
+          end
+          else begin
+            let fileContent = Core.In_channel.read_all (dir ^ "/" ^ currentFile) in
+            let hashedFile = hash (Text fileContent) in
+            dirFileContent := (currentFile ^ ";t;" ^ (Digest.to_hex hashedFile) ^ "\n")::!dirFileContent;
+            Core.Out_channel.write_all (".ogit/objects/" ^ (Digest.to_hex hashedFile)) ~data:fileContent
+          end
+        end
+    done;
+    let fileContent = removeUnwantedPart(String.concat "" (!dirFileContent)) in
+    print_newline();
+    print_string fileContent;
+    print_newline();
+    let nhashedDir = Digest.string (fileContent) in
+    Core.Out_channel.write_all (".ogit/objects/" ^ (Digest.to_hex nhashedDir)) ~data:fileContent;
+    nhashedDir
+  in
+  treatCurrentDir "../repo"
 
 let rec read_directory_object _h =
   let dataString = read_text_object _h in
