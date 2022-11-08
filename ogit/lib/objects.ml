@@ -12,9 +12,20 @@ let rec hash _obj =
 
 let is_known _h = Sys.file_exists (".ogit/objects/" ^ _h)
 
-let store_object _obj = failwith "TODO ( store_object )" nique ta mere nico
+let out s c = output_string c s
+let write_text name s =
+  Out_channel.with_open_text name (out s)
 
-let read_text_object _h: Digest.t = Core.In_channel.read_all (".ogit/objects/" ^ _h)
+let store_object _obj = 
+  let nameF = Digest.to_hex hash _obj in
+  match _obj with
+  | Text text -> write_text nameF text
+  | Directory (list) ->
+    let rec creationfichier  
+    if isDir then write_text nameF (nameF ^ ";d;" ^ )
+    
+
+(* let read_text_object _h: Digest.t = Core.In_channel.read_all (".ogit/objects/" ^ _h) *)
 
 let store_work_directory () = failwith "TODO ( store_work_directory )"
 
