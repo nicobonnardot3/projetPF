@@ -14,16 +14,7 @@ let is_known _h = Sys.file_exists (".ogit/objects/" ^ _h)
 
 let store_object _obj = failwith "TODO ( store_object )"
 
-let read_text_object _h: string =
-  let text = ref "" in
-  let ic = open_in (".ogit/objects/" ^ _h) in
-  try 
-    while true do
-      text := ((input_line ic) ^ "\n")
-    done;
-     ""
-  with End_of_file -> close_in ic;
-  !text
+let read_text_object _h: Digest.t = Core.In_channel.read_all (".ogit/objects/" ^ _h)
 
 let store_work_directory () = failwith "TODO ( store_work_directory )"
 
