@@ -12,7 +12,7 @@ let rec hash _obj =
 
 let is_known _h = Sys.file_exists (".ogit/objects/" ^ _h)
 
-let store_object _obj = failwith "TODO ( store_object )"
+let store_object _obj = failwith "TODO ( store_object )" nique ta mere nico
 
 let read_text_object _h: Digest.t = Core.In_channel.read_all (".ogit/objects/" ^ _h)
 
