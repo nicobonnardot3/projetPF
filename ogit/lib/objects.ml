@@ -10,7 +10,7 @@ let rec hash _obj =
     if isDir then Digest.string (name ^ ";d;" ^ (hash t) ^ (hash (Directory(tl))))
     else Digest.string (name ^ ";t;" ^ (hash t) ^ (hash (Directory(tl))))
 
-let is_known _h = Sys.file_exists (".ogit/objects/" ^ _h)
+    let is_known _h = Sys.file_exists (".ogit/objects/" ^ _h)
 
 let store_object _obj = failwith "TODO ( store_object )"
 
@@ -36,27 +36,29 @@ let rec read_directory_object _h =
         if (List.nth txtData 1) = "t" then (List.hd txtData, false, hash (Text (fileContent)), Text (fileContent))::(createDirObj(tl))
         else (List.hd txtData, true, (List.nth txtData 2), read_directory_object ( List.nth txtData 2 ))::(createDirObj(tl))
   in
-  Directory (createDirObj splitData)
+  Directory (List.rev (createDirObj splitData))
 
-let clean_work_directory () = failwith "TODO ( clean_work_directory )"
+  let clean_work_directory () = failwith "TODO ( clean_work_directory )"
 
 let read_directory_object _h = failwith "TODO ( read_directory_object )" 
   
-let clean_work_directory () = 
+let clean_work_directory () = ()
   
-  let rec clearDir dir =
+  (* let rec clearDir dir =
     let currentDirArray = Sys.readdir dir in 
 
     for i = 0 to ((Array.length currentDirArray)-1) do 
       let currentFile = currentDirArray.(i) in 
       let firstChar = String.get currentFile 0 in
 
-      if(firstChar <> '.') then 
+      if(firstChar <> '.') then begin
 
         if !(Sys.is_directory currentFile) then Sys.remove currentFile
         else try Sys.rmdir currentFile with | _ -> clearDir dir ^ "/" ^ currentFile
-        
-  clearDir "./"
+      end
+    done
+  in
+  clearDir "./" *)
 
 let restore_work_directory _obj = failwith "TODO ( restore_work_directory )"
 
