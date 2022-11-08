@@ -21,20 +21,20 @@ let store_work_directory () = failwith "TODO ( store_work_directory )"
 let rec read_directory_object _h =
   let dataString = read_text_object _h in
   let splitData = String.split_on_char '\n' dataString in
-  let rec createDirObj data = 
+  let rec createDirObj data =
     match data with
-    | [] -> Text ""
+    | [] -> [("", false, Digest.string "", Text "")]
     | [txt] ->
         let txtData = String.split_on_char ';' txt in
-        if (List.nth txtData 1) = "t" then Text (List.nth txtData 2)
-        else Directory ([List.hd txtData, true, (List.nth txtData 2), read_directory_object ( List.nth txtData 2 )] )
+        if (List.nth txtData 1) = "t" then [(List.hd txtData, false, hash (Text (List.nth txtData 2)), Text (List.nth txtData 2))]
+        else [(List.hd txtData, true, (List.nth txtData 2), read_directory_object ( List.nth txtData 2 ))]
     | hd::tl ->
         let txtData = String.split_on_char ';' hd in
-        if (List.nth txtData 1) = "t" then (Text (List.nth txtData 2))::(createDirObj(tl))
-        else (Directory ([List.hd txtData, true, (List.nth txtData 2), read_directory_object ( List.nth txtData 2 )]))::(createDirObj(tl))
+        if (List.nth txtData 1) = "t" then (List.hd txtData, false, hash (Text (List.nth txtData 2)), Text (List.nth txtData 2))::(createDirObj(tl))
+        else (List.hd txtData, true, (List.nth txtData 2), read_directory_object ( List.nth txtData 2 ))::(createDirObj(tl))
   in
-  Text ""
-  
+  Directory (createDirObj splitData)
+
 let clean_work_directory () = failwith "TODO ( clean_work_directory )"
 
 let restore_work_directory _obj = failwith "TODO ( restore_work_directory )"
