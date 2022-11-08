@@ -17,7 +17,7 @@ val is_known : Digest.t -> bool
 val store_object : t -> Digest.t
 
 (** charge le texte du fichier dans .ogit/objects/ dont le hash est donné *)
-(* val read_text_object : Digest.t -> string *)
+val read_text_object : Digest.t -> string
 
 (** crée dans .ogit/objects l'objet correspondant au répertoire repo/ et tous ceux qu'il contient récursivement, renvoie le hash de cet objet **)
 val store_work_directory : unit -> Digest.t 
