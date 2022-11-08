@@ -2,7 +2,7 @@ type t =
 | Text of string
 | Directory of (string * bool * Digest.t * t) list
 
-let rec hash _obj = 
+let rec hash _obj =
   match _obj with
   | Text text -> Digest.string text
   | Directory ([]) -> ""
