@@ -18,7 +18,15 @@ let read_text_object _h: Digest.t = Core.In_channel.read_all (".ogit/objects/" ^
 
 let store_work_directory () = failwith "TODO ( store_work_directory )"
 
-let read_directory_object _h = failwith "TODO ( read_directory_object )" 
+let read_directory_object _h =
+  let dataString = read_text_object _h in
+  let splitData = String.split_on_char '\n' dataString in
+  let rec createDirObj data = match data with
+    | [] -> Text ""
+    | [txt] -> 
+        let txtData = String.split_on_char ';' txt in
+        if (List.nth txtData 1) = "t" then Text (List.nth txtData 2)
+        else Directory (List.hd txtData, true, (List.nth txtData 2), createDirObj ( String.split_on_char '\n'  ) )
   
 let clean_work_directory () = failwith "TODO ( clean_work_directory )"
 
