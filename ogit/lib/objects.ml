@@ -10,7 +10,7 @@ let rec hash _obj =
     if isDir then Digest.string (name ^ ";d;" ^ (hash t) ^ (hash (Directory(tl))))
     else Digest.string (name ^ ";t;" ^ (hash t) ^ (hash (Directory(tl))))
 
-    let is_known _h = Sys.file_exists (".ogit/objects/" ^ _h)
+let is_known _h = Sys.file_exists (".ogit/objects/" ^ _h)
 
 let store_object _obj = failwith "TODO ( store_object )"
 
