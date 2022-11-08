@@ -1,4 +1,4 @@
-(** objects.mli : signature pour les objets versionnés ogit **)
+(** objects.mli : signature pour les objets versionnés ogit **) 
 
 (**  NOTE: on suppose que quand les fonctions sont appellées le CWD du programme est repo/ **)
 
