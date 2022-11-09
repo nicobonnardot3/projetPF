@@ -2,7 +2,16 @@ type t =
 | Text of string
 | Directory of (string * bool * Digest.t * t) list
 
-let rec hash _obj = 
+let removeTrailingEndOfLine str =
+    let strLen = String.length str in
+    if strLen < 2 then str
+    else begin
+      let substring1 = String.sub str (strLen-1) 1 in
+      if substring1 = "\n" then String.sub str 0 (strLen-1)
+      else str
+    end
+
+let rec hash _obj =
   match _obj with
   | Text text -> Digest.string text
   | Directory ([]) -> ""
@@ -16,7 +25,32 @@ let store_object _obj = failwith "TODO ( store_object )"
 
 let read_text_object _h: Digest.t = Core.In_channel.read_all (".ogit/objects/" ^ _h)
 
-let store_work_directory () = failwith "TODO ( store_work_directory )"
+let store_work_directory () : Digest.t =
+  let rec treatCurrentDir dir : Digest.t =
+    let currentDirArray = Sys.readdir dir in
+    let dirFileContent = ref [] in
+    for i=0 to (Array.length currentDirArray) - 1 do
+      let currentFile = currentDirArray.(i) in
+      let firstChar = String.get currentFile 0 in
+        if(firstChar <> '.') then begin
+          if (Sys.is_directory (dir ^ "/" ^ currentFile)) then begin
+            let hashedDir = treatCurrentDir (dir ^ "/" ^ currentFile) in
+            dirFileContent := (currentFile ^ ";d;" ^ (Digest.to_hex hashedDir) ^ "\n")::!dirFileContent;
+          end
+          else begin
+            let fileContent = Core.In_channel.read_all (dir ^ "/" ^ currentFile) in
+            let hashedFile = Digest.string fileContent in
+            dirFileContent := (currentFile ^ ";t;" ^ (Digest.to_hex hashedFile)  ^ "\n")::!dirFileContent;
+            Core.Out_channel.write_all (".ogit/objects/" ^ (Digest.to_hex hashedFile)) ~data:fileContent
+          end
+        end
+    done;
+    let fileContent = String.concat "" !dirFileContent in
+    let nhashedDir = Digest.string (removeTrailingEndOfLine fileContent) in
+    Core.Out_channel.write_all (".ogit/objects/" ^ (Digest.to_hex nhashedDir)) ~data:fileContent;
+    nhashedDir
+  in
+  treatCurrentDir "../repo"
 
 let rec read_directory_object _h =
   let dataString = read_text_object _h in
@@ -27,13 +61,13 @@ let rec read_directory_object _h =
         let txtData = String.split_on_char ';' txt in
         let fileName = List.hd (String.split_on_char '\r' (List.nth txtData 2)) in
         let fileContent = read_text_object fileName in
-        if (List.nth txtData 1) = "t" then [(List.hd txtData, false, hash (Text (fileContent)), Text (fileContent))]
+        if (List.nth txtData 1) = "t" then [(List.hd txtData, false, Digest.to_hex (Digest.string fileContent), Text (fileContent))]
         else [(List.hd txtData, true, (List.nth txtData 2), read_directory_object ( List.nth txtData 2 ))]
     | hd::tl ->
         let txtData = String.split_on_char ';' hd in
         let fileName = List.hd (String.split_on_char '\r' (List.nth txtData 2)) in
         let fileContent = read_text_object fileName in
-        if (List.nth txtData 1) = "t" then (List.hd txtData, false, hash (Text (fileContent)), Text (fileContent))::(createDirObj(tl))
+        if (List.nth txtData 1) = "t" then (List.hd txtData, false, Digest.to_hex (Digest.string fileContent), Text (fileContent))::(createDirObj(tl))
         else (List.hd txtData, true, (List.nth txtData 2), read_directory_object ( List.nth txtData 2 ))::(createDirObj(tl))
   in
   Directory (List.rev (createDirObj splitData))
