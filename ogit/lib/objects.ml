@@ -28,26 +28,28 @@ let read_text_object _h: Digest.t = Core.In_channel.read_all (".ogit/objects/" ^
 let store_work_directory () : Digest.t =
   let rec treatCurrentDir dir : Digest.t =
     let currentDirArray = Sys.readdir dir in
-    let dirFileContent = ref [] in
+    let directories = ref [] in
+    let files = ref [] in
     for i=0 to (Array.length currentDirArray) - 1 do
       let currentFile = currentDirArray.(i) in
       let firstChar = String.get currentFile 0 in
         if(firstChar <> '.') then begin
           if (Sys.is_directory (dir ^ "/" ^ currentFile)) then begin
             let hashedDir = treatCurrentDir (dir ^ "/" ^ currentFile) in
-            dirFileContent := (currentFile ^ ";d;" ^ (Digest.to_hex hashedDir) ^ "\n")::!dirFileContent;
+            directories := (currentFile ^ ";d;" ^ (Digest.to_hex hashedDir) ^ "\n")::!directories;
           end
           else begin
             let fileContent = Core.In_channel.read_all (dir ^ "/" ^ currentFile) in
             let hashedFile = Digest.string fileContent in
-            dirFileContent := (currentFile ^ ";t;" ^ (Digest.to_hex hashedFile)  ^ "\n")::!dirFileContent;
+            files := (currentFile ^ ";t;" ^ (Digest.to_hex hashedFile)  ^ "\n")::!files;
             Core.Out_channel.write_all (".ogit/objects/" ^ (Digest.to_hex hashedFile)) ~data:fileContent
           end
         end
     done;
-    let fileContent = String.concat "" !dirFileContent in
-    let nhashedDir = Digest.string (removeTrailingEndOfLine fileContent) in
-    Core.Out_channel.write_all (".ogit/objects/" ^ (Digest.to_hex nhashedDir)) ~data:fileContent;
+    let fileContent = String.concat "" (List.sort compare !files) in
+    let nFileContent = fileContent ^ (String.concat "" (List.sort compare !directories)) in
+    let nhashedDir = Digest.string (removeTrailingEndOfLine nFileContent) in
+    Core.Out_channel.write_all (".ogit/objects/" ^ (Digest.to_hex nhashedDir)) ~data:nFileContent;
     nhashedDir
   in
   treatCurrentDir "../repo"
