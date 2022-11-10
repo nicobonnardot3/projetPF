@@ -47,8 +47,8 @@ let store_work_directory () : Digest.t =
         end
     done;
     let fileContent = String.concat "" (List.sort compare !files) in
-    let nFileContent = fileContent ^ (String.concat "" (List.sort compare !directories)) in
-    let nhashedDir = Digest.string (removeTrailingEndOfLine nFileContent) in
+    let nFileContent = removeTrailingEndOfLine(fileContent ^ (String.concat "" (List.sort compare !directories))) in
+    let nhashedDir = Digest.string nFileContent in
     Core.Out_channel.write_all (".ogit/objects/" ^ (Digest.to_hex nhashedDir)) ~data:nFileContent;
     nhashedDir
   in
@@ -63,13 +63,13 @@ let rec read_directory_object _h =
         let txtData = String.split_on_char ';' txt in
         let fileName = List.hd (String.split_on_char '\r' (List.nth txtData 2)) in
         let fileContent = read_text_object fileName in
-        if (List.nth txtData 1) = "t" then [(List.hd txtData, false, Digest.to_hex (Digest.string fileContent), Text (fileContent))]
+        if (List.nth txtData 1) = "t" then [(List.hd txtData, false, hash (Text (fileContent)), Text (fileContent))]
         else [(List.hd txtData, true, (List.nth txtData 2), read_directory_object ( List.nth txtData 2 ))]
     | hd::tl ->
         let txtData = String.split_on_char ';' hd in
         let fileName = List.hd (String.split_on_char '\r' (List.nth txtData 2)) in
         let fileContent = read_text_object fileName in
-        if (List.nth txtData 1) = "t" then (List.hd txtData, false, Digest.to_hex (Digest.string fileContent), Text (fileContent))::(createDirObj(tl))
+        if (List.nth txtData 1) = "t" then (List.hd txtData, false, hash (Text (fileContent)), Text (fileContent))::(createDirObj(tl))
         else (List.hd txtData, true, (List.nth txtData 2), read_directory_object ( List.nth txtData 2 ))::(createDirObj(tl))
   in
   Directory (List.rev (createDirObj splitData))
