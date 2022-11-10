@@ -90,6 +90,22 @@ let clean_work_directory () = ()
   in
   clearDir "./" *)
 
-let restore_work_directory _obj = failwith "TODO ( restore_work_directory )"
+let restore_work_directory _obj =
+  let rec treatCurrentobj dir _nobj currentFileName =
+    match _nobj with
+    | Text text -> Core.Out_channel.write_all (dir ^ "/" ^ currentFileName) ~data:text
+    | Directory ([]) -> if Sys.file_exists (dir ^ "/" ^currentFileName) = false then Sys.command ("mkdir " ^ (dir ^ "/" ^currentFileName))  |> ignore;
+    | Directory ([(name, isDir, _, content)]) ->
+      if isDir then begin
+        if Sys.file_exists dir = false then Sys.command ("mkdir " ^ dir)  |> ignore;
+        treatCurrentobj dir content name
+      end
+      else treatCurrentobj dir content name
+    | Directory ((name, isDir, md5, content)::tl) -> 
+      if isDir then treatCurrentobj (dir ^ "/" ^ name) (Directory([(name, isDir, md5, content)])) name
+      else Core.Out_channel.write_all (dir ^ "/" ^ name) ~data:(match content with | Text text -> text | _ -> invalid_arg "Invalid content");
+      treatCurrentobj dir (Directory(tl)) currentFileName
+  in
+  treatCurrentobj "." (Directory [("repo", true,  hash _obj, _obj)]) ""
 
 let merge_work_directory_I _obj = failwith "TODO ( merge_work_directory_I )"
