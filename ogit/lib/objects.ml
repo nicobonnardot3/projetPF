@@ -47,8 +47,8 @@ let store_work_directory () : Digest.t =
         end
     done;
     let fileContent = String.concat "" (List.sort compare !files) in
-    let nFileContent = fileContent ^ (String.concat "" (List.sort compare !directories)) in
-    let nhashedDir = Digest.string (removeTrailingEndOfLine nFileContent) in
+    let nFileContent = removeTrailingEndOfLine(fileContent ^ (String.concat "" (List.sort compare !directories))) in
+    let nhashedDir = Digest.string nFileContent in
     Core.Out_channel.write_all (".ogit/objects/" ^ (Digest.to_hex nhashedDir)) ~data:nFileContent;
     nhashedDir
   in
