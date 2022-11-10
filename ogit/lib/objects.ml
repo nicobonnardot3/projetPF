@@ -56,7 +56,6 @@ let store_work_directory () : Digest.t =
 
 let rec read_directory_object _h =
   let dataString = read_text_object _h in
-  print_string dataString;
   let splitData = String.split_on_char '\n' dataString in
   let rec createDirObj data = match data with
     | [] -> [("", false, Digest.string "", Text "")]
