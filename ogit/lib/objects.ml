@@ -109,4 +109,8 @@ let restore_work_directory _obj =
   in
   treatCurrentobj "." (Directory [("repo", true,  hash _obj, _obj)]) ""
 
-let merge_work_directory_I _obj = failwith "TODO ( merge_work_directory_I )"
+let merge_work_directory_I _obj = 
+  (* 
+  Si fichier présent dans x mais pas ici, on l'ajoute ici / si il existe et a le meme contenu rien ne se passe / si il existe dans les 2
+  et a pas le même contenu -> on crée deux versions du fichiers -> blabla.cl (local version) et blabla.cr (remote version)   
+  *)
