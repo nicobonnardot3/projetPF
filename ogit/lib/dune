@@ -8,5 +8,5 @@
 (library
  (name ogitlib)
  (modules objects logs commands)
- (libraries unix core)
+ (libraries unix)
 )
