@@ -31,3 +31,6 @@ val clean_work_directory : unit -> unit
 
 (** écrit dans repo/ tous les fichiers mentionnés dans l'objet passé en paramètre **)
 val restore_work_directory : t -> unit
+
+(** met à jour repo/ en applicant la règle Merge 1 **)
+val merge_work_directory_I : t -> bool
