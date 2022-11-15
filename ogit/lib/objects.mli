@@ -1,4 +1,4 @@
-(** objects.mli : signature pour les objets versionnés ogit **) 
+(** objects.mli : signature pour les objets versionnés ogit **)
 
 (**  NOTE: on suppose que quand les fonctions sont appellées le CWD du programme est repo/ **)
 
@@ -7,7 +7,7 @@ type t =
 | Text of string 
 | Directory of (string * bool * Digest.t * t) list
 
-(** calcule (récursivement) le hash d'un objet versionné **)
+(** calcule le hash d'un objet versionné, attention pas de \n ajouté à la fin des réprésentation des répertoires **)
 val hash : t -> Digest.t
 
 (** teste si un objet, identifié par son hash, est présent dans .ogit/objects/ **)

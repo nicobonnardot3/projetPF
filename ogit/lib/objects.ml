@@ -11,6 +11,16 @@ let removeTrailingEndOfLine str =
       else str
     end
 
+(** read all text from file *)
+let read_all filename =
+  let treatIc ic = In_channel.input_all ic in
+  In_channel.with_open_text filename treatIc
+
+(** write all input text to output file *)
+let write_all filename ~data =
+  let treatOc ic = Out_channel.output_string ic data in
+  Out_channel.with_open_text filename treatOc
+
 let rec hash _obj =
   match _obj with
   | Text text -> Digest.string text
@@ -23,7 +33,7 @@ let is_known _h = Sys.file_exists (".ogit/objects/" ^ _h)
 
 let store_object _obj = failwith "TODO ( store_object )"
 
-let read_text_object _h: Digest.t = Core.In_channel.read_all (".ogit/objects/" ^ _h)
+let read_text_object _h: Digest.t = read_all (".ogit/objects/" ^ _h)
 
 let store_work_directory () : Digest.t =
   let rec treatCurrentDir dir : Digest.t =
@@ -39,17 +49,17 @@ let store_work_directory () : Digest.t =
             directories := (currentFile ^ ";d;" ^ (Digest.to_hex hashedDir) ^ "\n")::!directories;
           end
           else begin
-            let fileContent = Core.In_channel.read_all (dir ^ "/" ^ currentFile) in
+            let fileContent = read_all (dir ^ "/" ^ currentFile) in
             let hashedFile = Digest.string fileContent in
             files := (currentFile ^ ";t;" ^ (Digest.to_hex hashedFile)  ^ "\n")::!files;
-            Core.Out_channel.write_all (".ogit/objects/" ^ (Digest.to_hex hashedFile)) ~data:fileContent
+            write_all (".ogit/objects/" ^ (Digest.to_hex hashedFile)) ~data:fileContent
           end
         end
     done;
     let fileContent = String.concat "" (List.sort compare !files) in
     let nFileContent = removeTrailingEndOfLine(fileContent ^ (String.concat "" (List.sort compare !directories))) in
     let nhashedDir = Digest.string nFileContent in
-    Core.Out_channel.write_all (".ogit/objects/" ^ (Digest.to_hex nhashedDir)) ~data:nFileContent;
+    write_all (".ogit/objects/" ^ (Digest.to_hex nhashedDir)) ~data:nFileContent;
     nhashedDir
   in
   treatCurrentDir "../repo"
@@ -75,7 +85,6 @@ let rec read_directory_object _h =
   Directory (List.rev (createDirObj splitData))
 
 let clean_work_directory () = 
-  
   let rec clearDir dir =
     let currentDirArray = Sys.readdir dir in 
     for i = 0 to (Array.length currentDirArray) - 1 do
@@ -94,7 +103,7 @@ let clean_work_directory () =
 let restore_work_directory _obj =
   let rec treatCurrentobj dir _nobj currentFileName =
     match _nobj with
-    | Text text -> Core.Out_channel.write_all (dir ^ "/" ^ currentFileName) ~data:text
+    | Text text -> write_all (dir ^ "/" ^ currentFileName) ~data:text
     | Directory ([]) -> if Sys.file_exists (dir ^ "/" ^currentFileName) = false then Sys.command ("mkdir " ^ (dir ^ "/" ^currentFileName))  |> ignore;
     | Directory ([(name, isDir, _, content)]) ->
       if isDir then begin
@@ -104,7 +113,7 @@ let restore_work_directory _obj =
       else treatCurrentobj dir content name
     | Directory ((name, isDir, md5, content)::tl) -> 
       if isDir then treatCurrentobj (dir ^ "/" ^ name) (Directory([(name, isDir, md5, content)])) name
-      else Core.Out_channel.write_all (dir ^ "/" ^ name) ~data:(match content with | Text text -> text | _ -> invalid_arg "Invalid content");
+      else write_all (dir ^ "/" ^ name) ~data:(match content with | Text text -> text | _ -> invalid_arg "Invalid content");
       treatCurrentobj dir (Directory(tl)) currentFileName
   in
   treatCurrentobj "." (Directory [("repo", true,  hash _obj, _obj)]) ""
@@ -115,10 +124,43 @@ let merge_work_directory_I _obj =
   et a pas le même contenu -> on crée deux versions du fichiers -> blabla.cl (local version) et blabla.cr (remote version)   
   *)
 
-  let currentDirArray = Sys.readdir in
-  let auxiliaire _obj =
-    for i = 0 to (currentDirArray.length-1) do
-      match _obj with
-      | Text(contenu) -> begin 
-        if !(currentDirArray.(i).is_directory)
+  (* _obj est forcément un type Directory() *)
 
+  let currentDir = "./"
+  let currentDirArray = Sys.readdir currentDir in
+
+  let aux = 
+
+    match _obj with
+    | Directory([name, _, _, _]::tl) -> analyse hd name currentFile
+    | _ -> failwith("L'objet passé en parametre doit etre un repertoire (./repo)")
+
+      
+    let analyse t t_name currentFile =
+
+      let fileCompare contenu file = "blabla"
+        (* Compare contenu en parametre et contenu du fichier en parametre,
+           ne touche a rien si identiques, sinon fait appel a fileCreate
+        *)
+      in
+
+      let fileCreate contenu t_name = "blabla"
+        (* Crée deux fichier, un .cl avec le contenu de currentFile, un .cr avec le contenu et le nom en parametres*)
+      in
+
+      let folderCreate t name = "blabla"
+        (* Crée un dossier a partir d'un objet t et de son nom
+        *)
+      in
+
+      for i = 0 to (currentDirArray.length - 1) do
+        let currentFile = currentDirArray.(i) in
+        match t with
+        | Text(contenu) -> if (!currentFile.is_directory) && t_name = currentFile then fileCompare contenu currentFile else fileCreate contenu t_name currentFile
+        | Directory(d) -> if currentFile.is_directory && t_name = currentFile then analyse d t_name currentFile ^ "/" else folderCreate d t_name
+
+
+
+    in
+  in
+  aux ()
