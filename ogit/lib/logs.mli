@@ -37,7 +37,3 @@ val init_commit : unit -> commit
 (** écrit le fichier correspondant au commit dans .ogit/logs et renvoie le
     hash de ce commit *)
 val store_commit : commit -> Digest.t
-
-(** lit le fichier d'un commit dans ./ogit/logs et construit la structure de
-    données associée *)
-val read_commit : Digest.t -> commit
