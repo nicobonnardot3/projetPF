@@ -119,48 +119,51 @@ let restore_work_directory _obj =
   treatCurrentobj "." (Directory [("repo", true,  hash _obj, _obj)]) ""
 
 let merge_work_directory_I _obj = 
-  (* 
-  Si fichier présent dans x mais pas ici, on l'ajoute ici / si il existe et a le meme contenu rien ne se passe / si il existe dans les 2
-  et a pas le même contenu -> on crée deux versions du fichiers -> blabla.cl (local version) et blabla.cr (remote version)   
-  *)
 
-  (* _obj est forcément un type Directory() *)
-
-  let currentDir = "./"
-  let currentDirArray = Sys.readdir currentDir in
-
-  let aux = 
-
-    match _obj with
-    | Directory([name, _, _, _]::tl) -> analyse hd name currentFile
-    | _ -> failwith("L'objet passé en parametre doit etre un repertoire (./repo)")
-
-      
-    let analyse t t_name currentFile =
-
-      let fileCompare contenu file = "blabla"
-        (* Compare contenu en parametre et contenu du fichier en parametre,
-           ne touche a rien si identiques, sinon fait appel a fileCreate
-        *)
-      in
-
-      let fileCreate contenu t_name = "blabla"
-        (* Crée deux fichier, un .cl avec le contenu de currentFile, un .cr avec le contenu et le nom en parametres*)
-      in
-
-      let folderCreate t name = "blabla"
-        (* Crée un dossier a partir d'un objet t et de son nom
-        *)
-      in
-
-      for i = 0 to (currentDirArray.length - 1) do
-        let currentFile = currentDirArray.(i) in
-        match t with
-        | Text(contenu) -> if (!currentFile.is_directory) && t_name = currentFile then fileCompare contenu currentFile else fileCreate contenu t_name currentFile
-        | Directory(d) -> if currentFile.is_directory && t_name = currentFile then analyse d t_name currentFile ^ "/" else folderCreate d t_name
-
-
-
-    in
+  match _obj with
+  | Text(_) -> failwith("L'objet en paramètre doit être un repertoire")
+  | _ -> ()
+  
+  let createFolder chemin =
+    (* On crée un repertoire avec chemin depuis repo/ *)
+    Sys.command "mkdir " ^ chemin
   in
-  aux ()
+
+  let createFile dir name contenu =
+    write_all (dir ^ "/" ^ name) contenu
+  in
+
+  let compareFiles data1 name_file2 currentDir =
+    (* data1 = remote file; data2 = local file *)
+    let data2 = read_all (currentDir ^ "/" ^ name_file2) in
+    if(data1 <> data2) then {
+      write_all (currentDir ^ "/" ^ name_file2 ^ ".cl") data2
+      write_all (currentDir ^ "/" ^ name_file2 ^ ".cr") data2
+    } done
+  in
+
+  let rec aux currentDir obj name =
+    let currentLocalDirArray = Sys.readdir currentDir in
+    match obj with 
+    | Directory((name, isDir, h, t)::tail) -> begin 
+      for i = 0 to (List.length currentLocalDirArray - 1 ) do
+        if(currentLocalDirArray.(i) = name && isDir) then aux (currentDir ^ "/" ^ name) name (* On rencontre un repertoire de meme nom que remote dans local *)
+        done
+      if !(Sys.file_exists (currentDir ^ "/" ^ name)) then createFolder (currentDir ^ "/" ^ name) 
+      end
+
+    | Text(contenu) -> begin
+      for i = 0 to (List.length currentLocalDirArray - 1 ) do
+        if(currentLocalDirArray.(i) = name && !isDir) then compareFiles contenu currentLocalDirArray.(i) currentDir
+        done
+      if(!Sys.file_exists (currentDir ^ "/" ^ name)) then createFile currentDir name contenu 
+      end 
+
+      in
+
+  let Directory(array) = _obj in 
+
+  for i = 0 to (List.length array - 1) do 
+    let (name,_,_,_) = List.nth array name in
+    aux "./" (List.nth array i) name
+  done
