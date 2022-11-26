@@ -136,6 +136,7 @@ let merge_work_directory_I _obj =
   let rec aux currentDir obj (name:string) =
     let currentLocalDirArray = Sys.readdir currentDir in
     match obj with 
+    | Directory([]) -> ()
     | Directory((nameF, isDir, h, t)::tl) ->  
       for i = 0 to (Array.length currentLocalDirArray - 1 ) do
         if(currentLocalDirArray.(i) = nameF && isDir) then aux (currentDir ^ "/" ^ nameF) (Directory(tl)) nameF (* On rencontre un repertoire de meme nom que remote dans local *)
@@ -153,7 +154,7 @@ let merge_work_directory_I _obj =
 
   match _obj with
   | Text(_) -> failwith("L'objet en paramètre doit être un repertoire")
-  | objet ->
+  | _ ->
     let Directory(array) = _obj in 
     for i = 0 to (List.length array - 1) do 
       let (name,isDir,_,t) = List.nth array i in
