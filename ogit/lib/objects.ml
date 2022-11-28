@@ -119,48 +119,33 @@ let restore_work_directory _obj =
   treatCurrentobj "." (Directory [("repo", true,  hash _obj, _obj)]) ""
 
 let merge_work_directory_I _obj = 
-
   let createFolder chemin = ignore(Sys.command ("mkdir " ^ chemin)) in
-
-  let createFile dir name contenu = write_all (dir ^ "/" ^ name) ~data:contenu in
-
-  let compareFiles data1 name_file2 currentDir =
-    (* data1 = remote file; data2 = local file *)
-    let data2 = read_all (currentDir ^ "/" ^ name_file2) in
-    if(data1 <> data2) then begin
-      write_all (currentDir ^ "/" ^ name_file2 ^ ".cl") ~data:data2;
-      write_all (currentDir ^ "/" ^ name_file2 ^ ".cr") ~data:data2
+  let compareFiles file1 nameFile2 currentDir =
+    let file2 = read_all (currentDir ^ "/" ^ nameFile2) in
+    if(file1 <> file2) then begin
+      write_all (currentDir ^ "/" ^ nameFile2 ^ ".cl") ~data:file2;
+      write_all (currentDir ^ "/" ^ nameFile2 ^ ".cr") ~data:file1
     end
   in
-
-  let rec aux currentDir obj (name:string) =
-    let currentLocalDirArray = Sys.readdir currentDir in
-    match obj with 
+  let rec aux ~currentDir ~obj ~name =
+    match obj with
+    | Text(contenu) -> compareFiles contenu name currentDir
     | Directory([]) -> ()
-    | Directory((nameF, isDir, h, t)::tl) ->  
-      for i = 0 to (Array.length currentLocalDirArray - 1 ) do
-        if(currentLocalDirArray.(i) = nameF && isDir) then aux (currentDir ^ "/" ^ nameF) (Directory(tl)) nameF (* On rencontre un repertoire de meme nom que remote dans local *)
-        done;
-      if (Sys.file_exists (currentDir ^ "/" ^ nameF) = false) then createFolder (currentDir ^ "/" ^ nameF) 
-
-    | Text(contenu) -> 
-      for i = 0 to (Array.length currentLocalDirArray - 1 ) do
-        if(currentLocalDirArray.(i) = name) then compareFiles contenu currentLocalDirArray.(i) currentDir
-        done;
-      if(Sys.file_exists (currentDir ^ "/" ^ name) = false) then createFile currentDir name contenu  
-
-      in
-
-
+    | Directory([(nameF, isDir, h, t)]) -> 
+      if isDir then
+        aux ~currentDir:(currentDir ^ "/" ^ nameF) ~name:nameF ~obj:t
+      else
+        aux ~currentDir:(currentDir ^ "/" ^ nameF) ~name:nameF ~obj:(Directory([(nameF, isDir, h, t)]))
+    | Directory((nameF, isDir, h, t)::tl) ->
+      if isDir then begin
+        if (Sys.file_exists (currentDir ^ "/" ^ nameF) = false) then begin createFolder (currentDir ^ "/" ^ nameF) end;
+        aux ~currentDir:(currentDir ^ "/" ^ nameF) ~name:nameF ~obj:t;
+        aux ~currentDir:"" ~name:nameF  ~obj:(Directory(tl))
+      end else
+        aux ~currentDir:(currentDir ^ "/" ^ nameF) ~name:nameF ~obj:(Directory([(nameF, isDir, h, t)]));
+        aux ~currentDir:"" ~name:nameF  ~obj:(Directory(tl))
+  in
   match _obj with
   | Text(_) -> failwith("L'objet en paramètre doit être un repertoire")
-  | _ ->
-    let Directory(array) = _obj in 
-    for i = 0 to (List.length array - 1) do 
-      let (name,isDir,_,t) = List.nth array i in
-      if isDir then aux "./" (Directory([List.nth array i])) name
-      else aux "./" t name
-    done
-  
-
-  
+  | Directory([]) -> ()
+  | Directory((nameF, isDir, h, t)::tl) -> aux ~currentDir:"./" ~name:nameF ~obj:(Directory((nameF, isDir, h, t)::tl))
