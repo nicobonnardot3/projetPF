@@ -1,5 +1,9 @@
 {
     "workbench.colorCustomizations": {
         "minimap.background": "#00000000"
+    },
+    "ocaml.sandbox": {
+        "kind": "opam",
+        "switch": "4.14.0"
     }
 }

@@ -117,4 +117,39 @@ let restore_work_directory _obj =
   in
   treatCurrentobj "." (Directory [("repo", true,  hash _obj, _obj)]) ""
 
-let merge_work_directory_I _obj = failwith "TODO ( merge_work_directory_I )"
+let merge_work_directory_I _obj = 
+  let treatFile ~remoteFileContent ~localFileName ~currentDir =
+    print_string currentDir;
+    if (Sys.file_exists (currentDir ^ "/" ^ localFileName)) then begin
+      let file2 = read_all (currentDir ^ "/" ^ localFileName) in
+      if(remoteFileContent <> file2) then begin
+        write_all (currentDir ^ "/" ^ localFileName ^ ".cl") ~data:file2;
+        write_all (currentDir ^ "/" ^ localFileName ^ ".cr") ~data:remoteFileContent
+      end
+    end
+    else write_all (currentDir ^ "/" ^ localFileName) ~data:remoteFileContent
+  in
+  let rec aux ~currentDir ~obj ~name =
+    match obj with
+    | Text(text) -> treatFile ~currentDir:currentDir ~remoteFileContent:text ~localFileName:name
+    | Directory([]) -> ()
+    | Directory([(nameF, isDir, h, t)]) ->
+      if isDir then begin
+        if (Sys.file_exists (currentDir ^ "/" ^ nameF) = false) then Sys.command ("mkdir " ^ (currentDir)) |> ignore;
+        aux ~currentDir:(currentDir ^ "/" ^ nameF) ~name:nameF ~obj:t
+      end
+      else
+        aux ~currentDir:currentDir ~name:nameF ~obj:t
+    | Directory((nameF, isDir, h, t)::tl) ->
+      if isDir = false then begin
+        aux ~currentDir:currentDir ~name:nameF ~obj:t;
+        aux ~currentDir:currentDir ~name:name  ~obj:(Directory(tl))
+      end else
+        if (Sys.file_exists (currentDir ^ "/" ^ nameF) = false) then Sys.command ("mkdir " ^ (currentDir ^ "/" ^ nameF)) |> ignore;
+        aux ~currentDir:currentDir ~name:nameF ~obj:(Directory([(nameF, isDir, h, t)]));
+        aux ~currentDir:currentDir ~name:name  ~obj:(Directory(tl))
+  in
+  match _obj with
+  | Text(_) -> failwith("L'objet en paramètre doit être un repertoire")
+  | Directory([]) -> ()
+  | Directory((nameF, isDir, h, t)::tl) -> aux ~currentDir:"." ~name:nameF ~obj:(Directory((nameF, isDir, h, t)::tl))
