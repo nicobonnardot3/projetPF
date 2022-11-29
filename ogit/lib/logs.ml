@@ -10,7 +10,7 @@ let date_fm _d =
     Printf.sprintf "%02d:%02d:%02d-%02d/%02d/%04d" time.tm_hour time.tm_min time.tm_sec time.tm_mday (time.tm_mon + 1) (time.tm_year + 1900) 
         
 let set_head _l =
-    let content = (List.fold_left (fun x y -> x ^ ";" ^ y) "" (List.map Digest.to_hex _l)) in
+    let content = List.fold_left (fun x y -> x ^ ";" ^ y) "" (List.map Digest.to_hex _l) in
     let len = String.length content in
     let treatOc ic = Out_channel.output_string ic (String.sub content 1 (len - 1) ) in
     Out_channel.with_open_text ".ogit/HEAD" treatOc
