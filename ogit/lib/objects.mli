@@ -34,3 +34,9 @@ val restore_work_directory : t -> unit
 
 (** met à jour repo/ en applicant la règle Merge 1 **)
 val merge_work_directory_I : t -> bool
+
+(** print string list as string **)
+val printList: string list -> unit
+
+(** make a string out of an object **)
+val stringOfObject: t -> string

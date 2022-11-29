@@ -21,10 +21,20 @@ let write_all filename ~data =
   let treatOc ic = Out_channel.output_string ic data in
   Out_channel.with_open_text filename treatOc
 
+
+let printList (a: string list) = print_string ("[\"" ^ (String.concat "\"; \"" a) ^ "\"]")
+
+let rec stringOfObject obj = match obj with
+| Text s -> Format.sprintf "Text('%s')" s
+| Directory(l) -> 
+  l |> List.sort compare |> List.map (fun (s,d,h,obj) -> Format.sprintf "(%s,%b,%s,%s)" s d (Digest.to_hex h) (stringOfObject obj))
+  |> String.concat ";" 
+  |> Format.sprintf "Directory[%s]"
+
 let rec hash _obj =
   match _obj with
   | Text text -> Digest.string text
-  | Directory ([]) -> ""
+  | Directory ([]) -> Digest.string ""
   | Directory ((name, isDir, _, t)::tl) ->
     if isDir then Digest.string (name ^ ";d;" ^ (hash t) ^ (hash (Directory(tl))))
     else Digest.string (name ^ ";t;" ^ (hash t) ^ (hash (Directory(tl))))
@@ -33,7 +43,8 @@ let is_known _h = Sys.file_exists (".ogit/objects/" ^ _h)
 
 let store_object _obj = failwith "TODO ( store_object )"
 
-let read_text_object _h = read_all (".ogit/objects/" ^ (Digest.to_hex _h))
+let read_text_object _h = 
+  read_all (".ogit/objects/" ^ (Digest.to_hex _h))
 
 let store_work_directory () : Digest.t =
   let rec treatCurrentDir dir : Digest.t =
@@ -65,7 +76,7 @@ let store_work_directory () : Digest.t =
   treatCurrentDir "../repo"
 
 let rec read_directory_object _h =
-  let dataString = read_text_object (Digest.from_hex _h) in
+  let dataString = read_text_object _h in
   let splitData = String.split_on_char '\n' dataString in
   let rec createDirObj data = match data with
     | [] -> [("", false, Digest.string "", Text "")]
@@ -74,13 +85,13 @@ let rec read_directory_object _h =
         let fileName = List.hd (String.split_on_char '\r' (List.nth txtData 2)) in
         let fileContent = read_text_object (Digest.from_hex fileName) in
         if (List.nth txtData 1) = "t" then [(List.hd txtData, false, hash (Text (fileContent)), Text (fileContent))]
-        else [(List.hd txtData, true, Digest.from_hex (List.nth txtData 2), read_directory_object (List.nth txtData 2 ))]
+        else [(List.hd txtData, true, Digest.from_hex (List.nth txtData 2), read_directory_object (Digest.from_hex (List.nth txtData 2 )))]
     | hd::tl ->
         let txtData = String.split_on_char ';' hd in
         let fileName = List.hd (String.split_on_char '\r' (List.nth txtData 2)) in
         let fileContent = read_text_object (Digest.from_hex fileName) in
         if (List.nth txtData 1) = "t" then (List.hd txtData, false, hash (Text (fileContent)), Text (fileContent))::(createDirObj(tl))
-        else (List.hd txtData, true, Digest.from_hex (List.nth txtData 2), read_directory_object (List.nth txtData 2))::(createDirObj(tl))
+        else (List.hd txtData, true, Digest.from_hex (List.nth txtData 2), read_directory_object (Digest.from_hex (List.nth txtData 2)))::(createDirObj(tl))
   in
   Directory (List.rev (createDirObj splitData))
 
@@ -117,14 +128,15 @@ let restore_work_directory _obj =
   in
   treatCurrentobj "." (Directory [("repo", true,  hash _obj, _obj)]) ""
 
-let merge_work_directory_I _obj = 
+let merge_work_directory_I _obj =
+  let res = ref true in
   let treatFile ~remoteFileContent ~localFileName ~currentDir =
-    print_string currentDir;
     if (Sys.file_exists (currentDir ^ "/" ^ localFileName)) then begin
       let file2 = read_all (currentDir ^ "/" ^ localFileName) in
       if(remoteFileContent <> file2) then begin
         write_all (currentDir ^ "/" ^ localFileName ^ ".cl") ~data:file2;
-        write_all (currentDir ^ "/" ^ localFileName ^ ".cr") ~data:remoteFileContent
+        write_all (currentDir ^ "/" ^ localFileName ^ ".cr") ~data:remoteFileContent;
+        res := false
       end
     end
     else write_all (currentDir ^ "/" ^ localFileName) ~data:remoteFileContent
@@ -133,7 +145,7 @@ let merge_work_directory_I _obj =
     match obj with
     | Text(text) -> treatFile ~currentDir:currentDir ~remoteFileContent:text ~localFileName:name
     | Directory([]) -> ()
-    | Directory([(nameF, isDir, h, t)]) ->
+    | Directory([(nameF, isDir, _, t)]) ->
       if isDir then begin
         if (Sys.file_exists (currentDir ^ "/" ^ nameF) = false) then Sys.command ("mkdir " ^ (currentDir)) |> ignore;
         aux ~currentDir:(currentDir ^ "/" ^ nameF) ~name:nameF ~obj:t
@@ -151,5 +163,6 @@ let merge_work_directory_I _obj =
   in
   match _obj with
   | Text(_) -> failwith("L'objet en paramètre doit être un repertoire")
-  | Directory([]) -> ()
-  | Directory((nameF, isDir, h, t)::tl) -> aux ~currentDir:"." ~name:nameF ~obj:(Directory((nameF, isDir, h, t)::tl))
+  | Directory([]) -> !res
+  | Directory((nameF, isDir, h, t)::tl) -> aux ~currentDir:"." ~name:nameF ~obj:(Directory((nameF, isDir, h, t)::tl)); !res
+  
