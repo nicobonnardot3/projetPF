@@ -31,27 +31,27 @@ let rec stringOfObject obj = match obj with
   |> String.concat ";" 
   |> Format.sprintf "Directory[%s]"
 
-let rec hash _obj =
-  match _obj with
-  | Text text -> Digest.string text
-  | Directory ([]) -> Digest.string ""
-  | Directory ((name, isDir, _, t)::tl) ->
-    if isDir then Digest.string (name ^ ";d;" ^ (hash t) ^ (hash (Directory(tl))))
-    else Digest.string (name ^ ";t;" ^ (hash t) ^ (hash (Directory(tl))))
+let hash obj =
+  let rec aux obj1 =
+    match obj1 with
+    | Text text -> text
+    | Directory ([]) -> ""
+    | Directory ((name, isDir, hashed, _)::tl) ->
+      if isDir then removeTrailingEndOfLine(name ^ ";d;" ^ Digest.to_hex hashed ^ "\n" ^ (aux (Directory(tl))))
+      else removeTrailingEndOfLine(name ^ ";t;" ^ Digest.to_hex hashed ^ "\n" ^ (aux (Directory(tl))))
+  in Digest.string (aux obj)
 
-let is_known _h = Sys.file_exists (".ogit/objects/" ^ _h)
+let is_known _h = Sys.file_exists (".ogit/objects/" ^ (Digest.to_hex _h))
 
 let store_object _obj = 
-
   let rec writeFolder list fileToWriteIn = match list with
     | ((name, isDir, h, _)::tl) -> if(isDir) 
       then 
-      (ignore (Sys.command ("echo '" ^ name ^ ";d;" ^ h ^ "' >> " ^ fileToWriteIn)); writeFolder tl fileToWriteIn) 
+      (ignore (Sys.command ("echo '" ^ name ^ ";d;" ^ (Digest.to_hex h) ^ "' >> " ^ fileToWriteIn)); writeFolder tl fileToWriteIn) 
       else 
-      (ignore (Sys.command ("echo '" ^ name ^ ";t;" ^ h ^ "' >> " ^ fileToWriteIn)); writeFolder tl fileToWriteIn)
+      (ignore (Sys.command ("echo '" ^ name ^ ";t;" ^ (Digest.to_hex h) ^ "' >> " ^ fileToWriteIn)); writeFolder tl fileToWriteIn)
     | [] -> ()
   in
-
   let name = hash _obj in
   match _obj with
     (* 
@@ -59,15 +59,14 @@ let store_object _obj =
        Si c'est un dossier, on crée un fichier texte dans objects et on y écrit ligne par ligne le nom;[d ou t selon type du fichier];hash de chaque fichier du dossier
        Et la fonction renvoie le Digest.t de l'objet   
     *)
-    | Text(contenu) -> (write_all ("./.ogit/objects/" ^ name) ~data:contenu; name)
-    | Directory ([]) -> (ignore (Sys.command ("touch ./.ogit/objects/" ^ name)); name)
-    | Directory([(nameF, isDir, h, _)]) -> if(isDir) then (write_all ("./.ogit/objects/" ^ name) ~data:(nameF ^ ";d;" ^ h); h) else (write_all ("./.ogit/objects/" ^ name) ~data:(nameF ^ "t" ^ h); h)
+    | Text(contenu) -> (write_all ("./.ogit/objects/" ^ name) ~data:contenu; (Digest.to_hex name))
+    | Directory ([]) -> (ignore (Sys.command ("touch ./.ogit/objects/" ^ (Digest.to_hex name))); name)
+    | Directory([(nameF, isDir, h, _)]) -> if(isDir) then (write_all ("./.ogit/objects/" ^ (Digest.to_hex name)) ~data:(nameF ^ ";d;" ^ h); h) else (write_all ("./.ogit/objects/" ^ (Digest.to_hex name)) ~data:(nameF ^ "t" ^ h); h)
     | Directory(list) -> 
-      let fileToWriteIn =  "./.ogit/objects/" ^ name in
-      ignore (Sys.command ("touch ./.ogit/objects/" ^ name));
+      let fileToWriteIn =  "./.ogit/objects/" ^ (Digest.to_hex name) in
+      ignore (Sys.command ("touch ./.ogit/objects/" ^ (Digest.to_hex name)));
       writeFolder list fileToWriteIn;
       name
-    
 
 let read_text_object _h = 
   read_all (".ogit/objects/" ^ (Digest.to_hex _h))
@@ -105,7 +104,7 @@ let rec read_directory_object _h =
   let dataString = read_text_object _h in
   let splitData = String.split_on_char '\n' dataString in
   let rec createDirObj data = match data with
-    | [] -> [("", false, Digest.string "", Text "")]
+    | [] -> []
     | [txt] ->
         let txtData = String.split_on_char ';' txt in
         let fileName = List.hd (String.split_on_char '\r' (List.nth txtData 2)) in
