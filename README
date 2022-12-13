@@ -1,8 +1,9 @@
 FEATURES
-blablabla
+commands.ml, logs.ml and object.ml are complete and work
 
 TESTS
-blablblabla
+we didn't add more test
 
 KNOWN ISSUES
-blablabla
+Out of time to implement betterhash and merge II
+we did'nt quite have the same result because of the "tree" unix command we don't exactly have the same result as the test
