@@ -163,8 +163,10 @@ let merge_work_directory_I _obj =
     if (Sys.file_exists (currentDir ^ "/" ^ localFileName)) then begin
       let file2 = read_all (currentDir ^ "/" ^ localFileName) in
       if(remoteFileContent <> file2) then begin
+        Printf.printf "CONFLICT (object): Merge conflict in %s\n" (currentDir ^ "/" ^ localFileName);
         write_all (currentDir ^ "/" ^ localFileName ^ ".cl") ~data:file2;
         write_all (currentDir ^ "/" ^ localFileName ^ ".cr") ~data:remoteFileContent;
+        Sys.remove (currentDir ^ "/" ^ localFileName);
         res := false
       end
     end
