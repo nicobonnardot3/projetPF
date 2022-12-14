@@ -1,8 +1,17 @@
-FEATURES
-blablabla
+# Projet Programmation fonctionnelle
+## FEATURES
 
-TESTS
-blablblabla
+- intitialize commit with ogit_init, only works if the projects has not been commited yet
+- commit changes to current branch
+- checkout to previously created branches
+- merge a branch into the current one
 
-KNOWN ISSUES
-blablabla
+## TESTS
+
+we didn't add more test
+
+## KNOWN ISSUES
+
+- File that have conflicts are not deleted
+- Out of time to implement betterhash and merge II
+- we did'nt quite have the same result because of the "tree" unix command we don't exactly have the same result as the test
