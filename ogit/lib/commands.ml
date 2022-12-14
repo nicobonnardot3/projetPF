@@ -10,13 +10,13 @@ let ogit_init () =
   let commitHash = Logs.store_commit (Logs.init_commit ()) in
   Logs.set_head [commitHash]
   end
-  else failwith "Already initialized"
+  else Printf.printf "Already initialized"
 
-let ogit_commit _msg = 
+let ogit_commit msg = 
   let commit = {
     Logs.parents = Logs.get_head ();
     date = Unix.time ();
-    message = _msg;
+    message = msg;
     content = Objects.store_work_directory ()} in
   let commitHash = Logs.store_commit commit in
   Logs.set_head [commitHash]
@@ -27,7 +27,7 @@ let ogit_checkout _hash =
   Objects.restore_work_directory (Objects.read_directory_object commit.content);
   Logs.set_head [Digest.from_hex _hash]
 
-let ogit_log () = failwith "TODO"
+let ogit_log () = Printf.printf "TODO"
 
 let ogit_merge remoteHash =
   let rec check_ancesters (list: Digest.t list) (clist: string list) =
@@ -47,7 +47,7 @@ let ogit_merge remoteHash =
   in
   let head = Logs.get_head () in
   Logs.set_head ((Digest.from_hex remoteHash)::head);
-  if Sys.file_exists (".ogit/logs/" ^ remoteHash) = false then Printf.printf "Branch %s doesn't exist!" remoteHash
+  if Sys.file_exists (".ogit/logs/" ^ remoteHash) = false then Printf.printf "Branch %s doesn't exist!\n" remoteHash
   else if  check_ancesters head [remoteHash] = false then begin
      Printf.printf "Same branch!";
      Logs.set_head head
@@ -55,7 +55,7 @@ let ogit_merge remoteHash =
   else
     let commit = Logs.read_commit (Digest.from_hex remoteHash) in
     let remoteObj = Objects.read_directory_object (commit.content) in
-    if Objects.merge_work_directory_I remoteObj = false then begin 
+    if Objects.merge_work_directory_I remoteObj = false then begin
       Printf.printf "Automatic merge failed; fix conflicts and then commit the result\n"
     end else begin
     let commit = {

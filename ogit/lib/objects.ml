@@ -13,17 +13,13 @@ let removeTrailingEndOfLine str =
 
 (** read all text from file *)
 let read_all filename =
-  try 
-    let treatIc ic = In_channel.input_all ic in
-    In_channel.with_open_text filename treatIc
-  with _ -> failwith "File not found"
+  let treatIc ic = In_channel.input_all ic in
+  In_channel.with_open_text filename treatIc
 
 (** write all input text to output file *)
 let write_all filename ~data =
-  try 
-    let treatOc ic = Out_channel.output_string ic data in
-    Out_channel.with_open_text filename treatOc
-  with _ -> failwith "File not found"
+  let treatOc ic = Out_channel.output_string ic data in
+  Out_channel.with_open_text filename treatOc
 
 
 let printList (a: string list) = print_string ("[\"" ^ (String.concat "\"; \"" a) ^ "\"]")
@@ -102,7 +98,7 @@ let store_work_directory () : Digest.t =
     write_all (".ogit/objects/" ^ (Digest.to_hex nhashedDir)) ~data:nFileContent;
     nhashedDir
   in
-  treatCurrentDir "../repo"
+  treatCurrentDir "."
 
 let rec read_directory_object _h =
   let dataString = read_text_object _h in
@@ -155,7 +151,7 @@ let restore_work_directory _obj =
       else write_all (dir ^ "/" ^ name) ~data:(match content with | Text text -> text | _ -> invalid_arg "Invalid content");
       treatCurrentobj dir (Directory(tl)) currentFileName
   in
-  treatCurrentobj "." (Directory [("repo", true,  hash _obj, _obj)]) ""
+  treatCurrentobj "." (Directory [("", true,  hash _obj, _obj)]) ""
 
 let merge_work_directory_I _obj =
   let res = ref true in
@@ -193,7 +189,6 @@ let merge_work_directory_I _obj =
         aux ~currentDir:currentDir ~name:name  ~obj:(Directory(tl))
   in
   match _obj with
-  | Text(_) -> failwith("L'objet en paramètre doit être un repertoire")
+  | Text(_) -> Printf.printf "L'objet en paramètre doit être un repertoire"; false
   | Directory([]) -> !res
   | Directory((nameF, isDir, h, t)::tl) -> aux ~currentDir:"." ~name:nameF ~obj:(Directory((nameF, isDir, h, t)::tl)); !res
-  
