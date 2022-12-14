@@ -13,13 +13,17 @@ let removeTrailingEndOfLine str =
 
 (** read all text from file *)
 let read_all filename =
-  let treatIc ic = In_channel.input_all ic in
-  In_channel.with_open_text filename treatIc
+  try 
+    let treatIc ic = In_channel.input_all ic in
+    In_channel.with_open_text filename treatIc
+  with _ -> failwith "File not found"
 
 (** write all input text to output file *)
 let write_all filename ~data =
-  let treatOc ic = Out_channel.output_string ic data in
-  Out_channel.with_open_text filename treatOc
+  try 
+    let treatOc ic = Out_channel.output_string ic data in
+    Out_channel.with_open_text filename treatOc
+  with _ -> failwith "File not found"
 
 
 let printList (a: string list) = print_string ("[\"" ^ (String.concat "\"; \"" a) ^ "\"]")
