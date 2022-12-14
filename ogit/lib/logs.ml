@@ -7,12 +7,12 @@ type commit = {
 
 exception CommitNotFound of string
     
-let date_fm _d = 
-    let time = Unix.localtime _d in
+let date_fm d = 
+    let time = Unix.localtime d in
     Printf.sprintf "%02d:%02d:%02d-%02d/%02d/%04d" time.tm_hour time.tm_min time.tm_sec time.tm_mday (time.tm_mon + 1) (time.tm_year + 1900) 
         
-let set_head _l =
-    let content = List.fold_left (fun x y -> x ^ ";" ^ y) "" (List.map Digest.to_hex _l) in
+let set_head l =
+    let content = List.fold_left (fun x y -> x ^ ";" ^ y) "" (List.map Digest.to_hex l) in
     let len = String.length content in
     let treatOc ic = Out_channel.output_string ic (String.sub content 1 (len - 1) ) in
     Out_channel.with_open_text ".ogit/HEAD" treatOc
@@ -24,28 +24,28 @@ let get_head () =
     if tmpstr = [""] then [Digest.string ""] else
     List.map Digest.from_hex tmpstr
 
-let make_commit _s _h = 
+let make_commit s h = 
     let parents = get_head () in
     let date = Unix.time () in
-    {parents; date; message = _s; content = _h}
+    {parents; date; message = s; content = h}
 
 let init_commit () = 
     let workDirHash = Objects.store_work_directory () in
     make_commit "Initial commit" workDirHash
 
-let store_commit _c = 
-    let tmpstr = (List.fold_left (fun x y -> x ^ ";" ^ y) "" (List.map Digest.to_hex _c.parents)) in
+let store_commit c = 
+    let tmpstr = (List.fold_left (fun x y -> x ^ ";" ^ y) "" (List.map Digest.to_hex c.parents)) in
     let parents = String.sub tmpstr 1 (String.length tmpstr - 1)  in
-    let date = date_fm _c.date in
-    let content = parents ^ "\n" ^ date ^ "\n" ^ _c.message ^ "\n" ^ (Digest.to_hex _c.content) in
+    let date = date_fm c.date in
+    let content = parents ^ "\n" ^ date ^ "\n" ^ c.message ^ "\n" ^ (Digest.to_hex c.content) in
     let path = (".ogit/logs/" ^ (Digest.to_hex (Digest.string content))) in
     let treatOc ic = Out_channel.output_string ic content in
     Out_channel.with_open_text path treatOc;
     Digest.string content
 
-let read_commit _h =
+let read_commit h =
     try
-        let fileName = (".ogit/logs/" ^ (Digest.to_hex _h)) in
+        let fileName = (".ogit/logs/" ^ (Digest.to_hex h)) in
         let treatIc ic = In_channel.input_all ic in
         let content = In_channel.with_open_text fileName treatIc in
         let lines = String.split_on_char '\n' content in
@@ -65,4 +65,4 @@ let read_commit _h =
         let message = List.nth lines 2 in
         let content = Digest.from_hex (List.nth lines 3) in
         {parents; date; message; content}
-    with _ -> raise (CommitNotFound (Digest.to_hex _h))
+    with _ -> raise (CommitNotFound (Digest.to_hex h))
