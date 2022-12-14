@@ -13,13 +13,17 @@ let removeTrailingEndOfLine str =
 
 (** read all text from file *)
 let read_all filename =
-  let treatIc ic = In_channel.input_all ic in
-  In_channel.with_open_text filename treatIc
+  try 
+    let treatIc ic = In_channel.input_all ic in
+    In_channel.with_open_text filename treatIc
+  with _ -> failwith "File not found"
 
 (** write all input text to output file *)
 let write_all filename ~data =
-  let treatOc ic = Out_channel.output_string ic data in
-  Out_channel.with_open_text filename treatOc
+  try 
+    let treatOc ic = Out_channel.output_string ic data in
+    Out_channel.with_open_text filename treatOc
+  with _ -> failwith "File not found"
 
 
 let printList (a: string list) = print_string ("[\"" ^ (String.concat "\"; \"" a) ^ "\"]")
@@ -159,8 +163,10 @@ let merge_work_directory_I _obj =
     if (Sys.file_exists (currentDir ^ "/" ^ localFileName)) then begin
       let file2 = read_all (currentDir ^ "/" ^ localFileName) in
       if(remoteFileContent <> file2) then begin
+        Printf.printf "CONFLICT (object): Merge conflict in %s\n" (currentDir ^ "/" ^ localFileName);
         write_all (currentDir ^ "/" ^ localFileName ^ ".cl") ~data:file2;
         write_all (currentDir ^ "/" ^ localFileName ^ ".cr") ~data:remoteFileContent;
+        Sys.remove (currentDir ^ "/" ^ localFileName);
         res := false
       end
     end

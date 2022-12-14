@@ -13,6 +13,9 @@ type commit = {
                             au moment du commit *)
 }
 
+(** exception levée quand le commit n'est pas trouvé *)
+exception CommitNotFound of string
+
 (** la date au format HH:MM:SS-JJ/MM/AAAA
     ex: 16:08:40-07/11/2022 *)
 val date_fm : float -> string
